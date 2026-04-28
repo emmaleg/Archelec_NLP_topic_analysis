@@ -1,3 +1,8 @@
+# Mon .gitignore
+data/
+charts/
+
+# Python.gitignore automatically created by GitHub
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
