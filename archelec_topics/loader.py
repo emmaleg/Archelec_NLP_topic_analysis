@@ -12,13 +12,15 @@ The corpus consists of two heterogeneous sources to merge:
    typically by election year and document ID.
 
 Both sources are joined on the document/Arkindex ID to produce a single
-pandas.DataFrame ready for downstream analysis."""
+pandas.DataFrame ready for downstream analysis.
+
+Author: Emma Leguay, ENSAE 3A - MiE M2, 2025-2026"""
 
 from pathlib import Path
 import pandas as pd
 
 
-def load_transcriptions(text_files_dir):
+def load_transcriptions(text_files_dir: str | Path) -> pd.DataFrame:
     """Loads all .txt files recursively from text_files_dir.
     
     Returns a dictionary {id: text} where the id is the filename
@@ -36,7 +38,7 @@ def load_transcriptions(text_files_dir):
     return pd.DataFrame(rows)
 
 
-def load_corpus(metadata_csv, text_files_dir):
+def load_corpus(metadata_csv: str | Path, text_files_dir: str | Path) -> pd.DataFrame:
     """Loads and joins metadata + transcriptions.
     
     Returns a DataFrame with the id and text column from the "professions de foi"
