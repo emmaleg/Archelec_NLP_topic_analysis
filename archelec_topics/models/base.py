@@ -35,6 +35,8 @@ class TopicModelBase(ABC):
     @abstractmethod
     def get_top_words(self, n_words=10):
         """Return a list of n_topics lists, each containing the top words of a topic."""
+    # Not a matrix here because the top words are not the same for all topics,
+    # so if we wanted to have the matrix representation, we would need the full vocab (i.e way too heavy)
 
     def assign_dominant_topic(self):
         """Return a 1D array (n_docs,) with the argmax topic per document."""
