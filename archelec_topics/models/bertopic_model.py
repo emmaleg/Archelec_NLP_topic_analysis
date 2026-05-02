@@ -164,7 +164,7 @@ class BERTopicModel(TopicModelBase):
         self.min_topic_size    = min_topic_size
         self.min_df            = min_df
         self.max_df            = max_df
-        self.max_features      = self.max_features
+        self.max_features      = max_features
         self.extra_stopwords   = list(extra_stopwords) if extra_stopwords is not None else None
         self.n_gram_range      = n_gram_range
         self.umap_n_neighbors  = umap_n_neighbors
@@ -238,12 +238,21 @@ class BERTopicModel(TopicModelBase):
         else:
             stopwords_list = None
         
-        vectorizer_model = CountVectorizer(
+        fit_corpus = lemmatized_documents if lemmatized_documents is not None else self._documents
+        doc_level_vectorizer = CountVectorizer(
+            min_df       = self.min_df,        # ex. 15
+            max_df       = self.max_df,        # ex. 0.6
+            max_features = self.max_features,  # ex. 10000
             ngram_range  = self.n_gram_range,
             stop_words   = stopwords_list,
-            min_df       = self.min_df,
-            max_df       = self.max_df,
-            max_features = self.max_features, 
+        )
+        doc_level_vectorizer.fit(fit_corpus)
+        vocab = doc_level_vectorizer.get_feature_names_out()
+        print(f"BERTopic vocabulary after doc-level filtering: {len(vocab)} terms")
+
+        vectorizer_model = CountVectorizer(
+            vocabulary  = vocab,
+            ngram_range = self.n_gram_range,
         )
 
         self.model = BERTopic(
