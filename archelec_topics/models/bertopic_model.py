@@ -26,7 +26,7 @@ Two design notes
    as "fraction of group documents dominated by each topic".
 
 Heavy dependencies (`bertopic`, `sentence-transformers`, `umap-learn`,
-`hdbscan`, `torch`) are imported lazily inside `fit()` and inside the
+`hdbscan`, `torch`) are imported inside `fit()` and inside the
 embedding helper.
 
 Author: Emma Leguay, ENSAE 3A - MiE M2, 2025-2026"""
@@ -146,6 +146,9 @@ class BERTopicModel(TopicModelBase):
         embedding_model="paraphrase-multilingual-MiniLM-L12-v2",
         min_topic_size=30,
         extra_stopwords=None,
+        min_df = 15,
+        max_df = 0.6,
+        max_features = 10000,
         n_gram_range=(1, 2),
         random_state=42,
         umap_n_neighbors=15,
@@ -159,6 +162,9 @@ class BERTopicModel(TopicModelBase):
         self._target_n_topics  = target
         self.embedding_model   = embedding_model
         self.min_topic_size    = min_topic_size
+        self.min_df            = min_df
+        self.max_df            = max_df
+        self.max_features      = self.max_features
         self.extra_stopwords   = list(extra_stopwords) if extra_stopwords is not None else None
         self.n_gram_range      = n_gram_range
         self.umap_n_neighbors  = umap_n_neighbors
@@ -174,7 +180,7 @@ class BERTopicModel(TopicModelBase):
     # fit
     # ------------------------------------------------------------------
 
-    def fit(self, documents, embeddings=None, **kwargs):
+    def fit(self, documents, embeddings=None, lemmatized_documents=None, **kwargs):
         """Fit BERTopic.
 
         Parameters
@@ -223,10 +229,21 @@ class BERTopicModel(TopicModelBase):
         )
 
         # CountVectorizer for c-TF-IDF — same stopwords as LDA/NMF
+        if self.extra_stopwords is not None:
+            import spacy
+            from archelec_topics.preprocessing import strip_accents
+            nlp = spacy.load("fr_core_news_md", disable=["ner", "parser", "tagger"])
+            full_sw = set(nlp.Defaults.stop_words) | set(self.extra_stopwords)
+            stopwords_list = sorted({strip_accents(w.lower()) for w in full_sw})
+        else:
+            stopwords_list = None
+        
         vectorizer_model = CountVectorizer(
-            ngram_range = self.n_gram_range,
-            stop_words  = self.extra_stopwords,
-            min_df      = 5,
+            ngram_range  = self.n_gram_range,
+            stop_words   = stopwords_list,
+            min_df       = self.min_df,
+            max_df       = self.max_df,
+            max_features = self.max_features, 
         )
 
         self.model = BERTopic(
@@ -241,6 +258,20 @@ class BERTopicModel(TopicModelBase):
 
         topics, _ = self.model.fit_transform(self._documents, embeddings=embeddings)
         self._topic_assignments = np.asarray(topics)
+
+        # Best practice non-anglophone (Grootendorst) : embeddings sur texte brut,
+        # c-TF-IDF sur texte lemmatisé. update_topics ne refait pas le clustering,
+        # il ne fait que ré-extraire les top words depuis les nouveaux documents.
+        if lemmatized_documents is not None:
+            if len(lemmatized_documents) != len(self._documents):
+                raise ValueError(
+                    f"lemmatized_documents has length {len(lemmatized_documents)} "
+                    f"but documents has {len(self._documents)}."
+                )
+            self.model.update_topics(
+                lemmatized_documents,
+                vectorizer_model=vectorizer_model,
+            )
 
         # Determine the kept topic IDs (exclude -1)
         info = self.model.get_topic_info()

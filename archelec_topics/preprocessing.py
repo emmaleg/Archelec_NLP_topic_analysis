@@ -293,6 +293,25 @@ _COMPOUND_PATTERNS_RAW = [
     (r"question\s+de\s+confiance",                          "question_confiance"),
     (r"politique\s+g[ée]n[ée]rale",                         "politique_generale"),
     (r"conseil\s+restreint",                                "conseil_restreint"),
+
+    # --- Alliances ---
+
+    # 4-party enumerations (anti-establishment discourse: "RPR, PS, UDF, PC")
+    (r"\brpr[\s\-/,;]*ps[\s\-/,;]*udf[\s\-/,;]*pc(?:f)?\b",   "rpr_ps_udf_pcf"),
+    (r"\brpr[\s\-/,;]*udf[\s\-/,;]*ps[\s\-/,;]*pc(?:f)?\b",   "rpr_ps_udf_pcf"),
+    (r"\bps[\s\-/,;]*pc(?:f)?[\s\-/,;]*rpr[\s\-/,;]*udf\b",   "rpr_ps_udf_pcf"),
+
+    # 3-party enumerations
+    (r"\brpr[\s\-/,;]*udf[\s\-/,;]*cds\b",                    "rpr_udf_cds"),
+    (r"\bps[\s\-/,;]*pc(?:f)?[\s\-/,;]*mrg\b",                "ps_pcf_mrg"),
+
+    # 2-party right coalition (RPR-UDF, all spellings)
+    (r"\brpr[\s\-/,;]*udf\b",                                 "rpr_udf"),
+    (r"\budf[\s\-/,;]*rpr\b",                                 "udf_rpr"),
+
+    # 2-party left coalitions
+    (r"\bps[\s\-/,;]*pc(?:f)?\b",                             "ps_pcf"),
+    (r"\bpc(?:f)?[\s\-/,;]*ps\b",                             "pcf_ps"),
 ]
 
 _COMPOUND_PATTERNS = [
@@ -447,25 +466,29 @@ EXTRA_STOPWORDS = {
     "décembre", "decembre", "legislatif", "prochain",
 
     # --- Generic verbs (>40% doc frequency, no thematic content) --- 
-    # "défendre", "defendre",
-    # should I add them ? True that it is not super distinctive
-    # but still very heavy meaning in political discourse
     "pouvoir", "devoir", "vouloir", "falloir", "voir", "faire", "donner", 
-    "mettre", "permettre",  "agir", "aller", "savoir",
+    "mettre", "permettre",  "agir", "aller", "savoir","choisir","remercier",
     "vivre", "croire", "rendre", "prendre", "trouver", "dire", "venir",
     "tenir", "porter", "passer", "rester", "arriver", "sortir", "partir",
-    "entendre", "regarder", "appeler", "rejoindre", "obtenir",
-    "apporter", "presenter", "assurer",
+    "entendre", "regarder", "appeler", "rejoindre", "obtenir", "proteger",
+    "apporter", "presenter", "assurer", "proposer","defendre", "creer",
+    "connaitre","appliquer","compter","continuer", "representer","engager",
 
     # --- Generic nouns/adjectives ubiquitous to political manifestos ---
     #  "paix", "aide"
-    # same question 
+    # should I add them ? True that it is not super distinctive
     "politique", "social", "pays", "france", "national", "etat", 
     "vie", "homme", "grand", "bon", "temps", "monde", "jour", 
     "face", "voie", "moyen", "force", "raison", "an", "année", "fin",
     "début", "suite", "réel", "vrai", "fois", "plan", "sens",
     "petit", "nouveau", "ancien", "premier", "dernier", "seul", "tout",
     "même", "autre", "important", "suppléant", "titulaire",
+    "programme","gouvernement","parti","majorite","volonte",
+    "mesure","besoin", "solution","valeur","interet","ensemble",
+    "action", "choix","soutien","soutenir","confiance","priorite",
+    "veritable","actuel","creation","groupe","chose","place",
+    "tete","nombre","mois","semaine","cote","affaire","responsable",
+    "verite","dirigeant","votant",
 
     # --- German OCR (most paragraphs already removed by strip_german_paragraphs;
     # this catches isolated leftover words that survived in mixed paragraphs) ---
@@ -487,7 +510,7 @@ EXTRA_STOPWORDS = {
     "vilain", "renne", "vosge", "ille", "ruffi", "masson", "laguiller",
     "arlette", "accé", "minimun", "documenta", "absenc", "eclogie",
     "vif", "socia", "trafi", "fiscer", "redresse", "compléte", "marseill", "saint",
-    "tion", "ment",
+    "tion", "ment", "alsac",
 
     # --- Encarts biographiques ---
     "naitre", "ne", "marier", "epouse", "epoux",

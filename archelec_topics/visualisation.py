@@ -7,24 +7,103 @@ import matplotlib.pyplot as plt
 from archelec_topics.interpretation import _resolve_labels
 from wordcloud import WordCloud
 
-def plot_topic_words(top_words_per_topic, title, n_cols=5, topic_labels=None):
-    n_topics = len(top_words_per_topic)
+def plot_topic_words(
+    source,
+    title="",
+    n_cols=5,
+    n_words=12,
+    topic_labels=None,
+    xlabel=None,
+    color="#332288",
+):
+    """Bar plot of top words per topic, with bar length = real word weight.
+
+    The previous version used `range(n, 0, -1)` as bar lengths, i.e. a purely
+    rank-based pseudo-weight. This version uses the model's actual weights so
+    the x-axis is interpretable:
+      - LDA  -> P(word | topic)   (gensim's `show_topic` probabilities)
+      - NMF  -> entries of the H components matrix
+      - BERTopic -> c-TF-IDF scores
+
+    Parameters
+    ----------
+    source :
+        - a fitted topic model exposing `_topic_word_weights`-compatible
+          attributes (LDATopicModel, NMFTopicModel, BERTopicModel), OR
+        - a list of {word: weight} dicts (one per topic), OR
+        - a list of word lists (legacy input — falls back to rank pseudo-weights
+          and warns via the x-axis label).
+    n_words : int
+        Number of top words to display per topic.
+    xlabel : str, optional
+        Override the auto-detected x-axis label.
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # --- 1. Normalize input to a list of {word: weight} dicts -----------------
+    if hasattr(source, "n_topics"):
+        # A fitted model -> use the existing helper to get real weights
+        weights_per_topic = _topic_word_weights(source, n_words=n_words)
+        if xlabel is None:
+            if hasattr(source, "model") and hasattr(source.model, "show_topic"):
+                xlabel = r"$P(\mathrm{word}\,|\,\mathrm{topic})$"
+            elif hasattr(source, "_H"):
+                xlabel = "NMF component weight"
+            else:
+                xlabel = "Weight"
+    elif len(source) > 0 and isinstance(source[0], dict):
+        # Already weight dicts
+        weights_per_topic = [
+            dict(sorted(d.items(), key=lambda kv: kv[1], reverse=True)[:n_words])
+            for d in source
+        ]
+        if xlabel is None:
+            xlabel = "Weight"
+    else:
+        # Legacy: list of word lists, no weights available
+        weights_per_topic = [
+            {w: float(len(words) - i) for i, w in enumerate(words[:n_words])}
+            for words in source
+        ]
+        if xlabel is None:
+            xlabel = "Rank (no weights provided)"
+
+    # --- 2. Layout ------------------------------------------------------------
+    n_topics = len(weights_per_topic)
     labels = _resolve_labels(topic_labels, n_topics, prefix="Topic ")
     n_rows = (n_topics + n_cols - 1) // n_cols
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(3 * n_cols, 3 * n_rows))
-    axes = axes.flatten()
-    for k, words in enumerate(top_words_per_topic):
+    axes = np.atleast_1d(axes).flatten()
+
+    # --- 3. One bar plot per topic, sorted by descending weight ---------------
+    for k, weights in enumerate(weights_per_topic):
         ax = axes[k]
-        n = len(words)
-        ax.barh(range(n), range(n, 0, -1), color="#332288")
+        items = sorted(weights.items(), key=lambda kv: kv[1], reverse=True)
+        words = [w for w, _ in items]
+        vals = [v for _, v in items]
+        n = len(items)
+
+        ax.barh(range(n), vals, color=color)
         ax.set_yticks(range(n))
         ax.set_yticklabels(words, fontsize=8)
-        ax.invert_yaxis()
+        ax.invert_yaxis()                     # highest weight on top
         ax.set_title(labels[k], fontsize=10)
-        ax.set_xticks([])
+        ax.tick_params(axis="x", labelsize=7)
+        ax.grid(axis="x", alpha=0.25)
+        ax.grid(axis="y", visible=False)
+
+    # Hide unused cells
     for k in range(n_topics, len(axes)):
         axes[k].axis("off")
-    fig.suptitle(title, fontsize=12)
+
+    # x-label only on the bottom row to keep the figure clean
+    bottom_row_start = (n_rows - 1) * n_cols
+    for k in range(bottom_row_start, n_topics):
+        axes[k].set_xlabel(xlabel, fontsize=8)
+
+    if title:
+        fig.suptitle(title, fontsize=12)
     plt.tight_layout()
     return fig
 
@@ -177,7 +256,7 @@ def plot_topic_prevalence_over_time(
     fig, ax = plt.subplots(figsize=figsize)
     if kind == "stack":
         prevalence.plot(kind="area", stacked=True, ax=ax, alpha=0.8,
-                        colormap="tab20")
+                        colormap="tab10")
     else:
         prevalence.plot(ax=ax, marker="o", linewidth=1.4)
     ax.set_xlabel("Year")
