@@ -1,2 +1,40 @@
-pandas
-pathlib
+# =============================================================================
+# Archelec Topics — Python dependencies
+#
+# Tested with Python 3.11.
+# After installing these, also run:
+#     python -m spacy download fr_core_news_md
+#
+# The version pins below correspond to a known-good combination at the time of
+# the project (late 2025 / early 2026). They use lower bounds (>=) rather than
+# strict pins so that minor updates remain compatible. If you hit a resolver
+# conflict (especially around numpy / numba / hdbscan), pin the offending
+# package to the exact version shown in the comment.
+# =============================================================================
+
+# --- Core scientific stack ---------------------------------------------------
+numpy>=1.26,<2.1
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+
+# --- Plotting / notebook -----------------------------------------------------
+matplotlib>=3.8
+wordcloud>=1.9
+jupyter>=1.0
+ipykernel>=6.29
+tqdm>=4.66
+
+# --- NLP & topic modelling (LDA / NMF) --------------------------------------
+spacy>=3.7,<3.9
+gensim>=4.3            # used for LDA + Cv coherence (CoherenceModel)
+
+# --- BERTopic stack ----------------------------------------------------------
+# BERTopic 0.16+ is required for the long-context BAAI/bge-m3 embeddings
+# and for reduce_outliers(strategy="embeddings").
+bertopic>=0.16
+sentence-transformers>=2.7
+torch>=2.1             # CUDA build is auto-selected by pip on Linux/Win;
+                       # on macOS / Apple Silicon the default wheel uses MPS
+umap-learn>=0.5
+hdbscan>=0.8.33
